@@ -2,12 +2,15 @@
 
 A custom Lovelace card for Home Assistant that displays Clash of Clans player information provided by the companion integration.
 
-This card is intended to be used with the `ha-clash-of-clans` custom integration.
+This card is intended to be used with the [ha-clash-of-clans](https://github.com/hriewe/ha-clash-of-clans) custom integration.
+
+<p align="center">
+  <img src="assets/card.png" />
+</p>
 
 ## Features
 
-- **Single entity selection** (pick the player "Info" sensor)
-- **Device/player discovery** (auto-finds related entities for the same player)
+- **Easy entity selection** (pick the player "Info" sensor)
 - **Optional sections**
   - Progression (troops/spells/heroes)
   - Clan War (status, attacks left, end time)
@@ -39,7 +42,7 @@ This repository is a **HACS Frontend** (Lovelace) custom repository.
 
 ### 3) Add the Lovelace resource
 
-Add a resource in Home Assistant:
+After a refresh, the card should be available on your dashboards. If it does not show up, add this resource in Home Assistant:
 
 - URL: `/hacsfiles/lovelace-clash-of-clans/clash-of-clans-card.js`
 - Type: `module`
@@ -48,7 +51,7 @@ Then refresh your browser.
 
 ## Usage
 
-Add the card to your dashboard.
+Add the card to your dashboard, choose the account you want to display.
 
 ### Visual editor
 
@@ -58,7 +61,7 @@ If your Home Assistant version supports visual editors, you can pick the player 
 
 ```yaml
 type: custom:clash-of-clans-card
-entity: sensor.clash_of_clans_#YOURTAG_info
+entity: sensor.{{your_player_name}}_info
 show_progression: true
 show_war: true
 ```
@@ -82,6 +85,10 @@ show_war: true
   - Ensure your integration entities have `player_tag` in state attributes.
   - Ensure you selected the player "Info" sensor (typically ends with `_info`).
 
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request with your ideas/fixes.
+
 ## Development
 
 ### Setup
@@ -99,12 +106,6 @@ npm run build
 Build output is written to:
 
 - `dist/clash-of-clans-card.js`
-
-### Watch
-
-```bash
-npm run watch
-```
 
 ## License
 

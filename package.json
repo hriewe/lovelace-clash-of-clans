@@ -1,0 +1,20 @@
+{
+  "name": "lovelace-clash-of-clans",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w"
+  },
+  "dependencies": {
+    "lit": "^3.1.0",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "rollup": "^4.9.0",
+    "typescript": "^5.9.3"
+  }
+}

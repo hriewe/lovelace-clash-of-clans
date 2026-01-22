@@ -1,0 +1,7 @@
+{
+  "name": "Clash of Clans Card",
+  "content_type": "lovelace",
+  "render_readme": true,
+  "filename": "clash-of-clans-card.js",
+  "zip_release": false
+}

@@ -203,7 +203,9 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         return localPath;
     }
     renderIcon(fileName, fallbackEmoji) {
-        const src = this.getAssetUrl(`assets/${fileName}`);
+        const src = this.getAssetUrl(fileName);
+        // For local development
+        //const src = this.getAssetUrl(`assets/${fileName}`);
         return b `
       <span class="icon-wrap">
         <img

@@ -175,7 +175,9 @@ export class ClashOfClansCard extends LitElement {
   }
 
   private renderIcon(fileName: string, fallbackEmoji: string): TemplateResult {
-    const src = this.getAssetUrl(`assets/${fileName}`);
+    const src = this.getAssetUrl(fileName);
+    // For local development
+    //const src = this.getAssetUrl(`assets/${fileName}`);
 
     return html`
       <span class="icon-wrap">

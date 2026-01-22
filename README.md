@@ -1,5 +1,8 @@
 # Clash of Clans Lovelace Card
 
+[![GitHub release](https://img.shields.io/github/release/hriewe/lovelace-clash-of-clans.svg)](https://github.com/hriewe/lovelace-clash-of-clans/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.4.4%2B-blue.svg)](https://github.com/home-assistant/core)
+
 A custom Lovelace card for Home Assistant that displays Clash of Clans player information provided by the companion integration.
 
 This card is intended to be used with the [ha-clash-of-clans](https://github.com/hriewe/ha-clash-of-clans) custom integration.
@@ -11,6 +14,7 @@ This card is intended to be used with the [ha-clash-of-clans](https://github.com
 ## Features
 
 - **Easy entity selection** (pick the player "Info" sensor)
+- **Track player statistics**
 - **Optional sections**
   - Progression (troops/spells/heroes)
   - Clan War (status, attacks left, end time)

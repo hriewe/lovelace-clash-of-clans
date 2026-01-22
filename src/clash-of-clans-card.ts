@@ -161,7 +161,17 @@ export class ClashOfClansCard extends LitElement {
   }
 
   private getAssetUrl(path: string): string {
-    return new URL(path, new URL(".", import.meta.url)).toString();
+    // Use HACS path for production, local path for development
+    const hacsPath = `/hacsfiles/lovelace-clash-of-clans/${path}`;
+    const localPath = new URL(path, new URL(".", import.meta.url)).toString();
+    
+    // Check if we're running in HACS environment
+    if (window.location.href.includes('/hacsfiles/') || 
+        document.querySelector('script[src*="/hacsfiles/lovelace-clash-of-clans/"]')) {
+      return hacsPath;
+    }
+    
+    return localPath;
   }
 
   private renderIcon(fileName: string, fallbackEmoji: string): TemplateResult {

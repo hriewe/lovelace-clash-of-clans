@@ -192,7 +192,15 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         return this.relatedEntities.find((e) => e.entity_id.endsWith(suffix));
     }
     getAssetUrl(path) {
-        return new URL(path, new URL(".", import.meta.url)).toString();
+        // Use HACS path for production, local path for development
+        const hacsPath = `/hacsfiles/lovelace-clash-of-clans/${path}`;
+        const localPath = new URL(path, new URL(".", import.meta.url)).toString();
+        // Check if we're running in HACS environment
+        if (window.location.href.includes('/hacsfiles/') ||
+            document.querySelector('script[src*="/hacsfiles/lovelace-clash-of-clans/"]')) {
+            return hacsPath;
+        }
+        return localPath;
     }
     renderIcon(fileName, fallbackEmoji) {
         const src = this.getAssetUrl(`assets/${fileName}`);

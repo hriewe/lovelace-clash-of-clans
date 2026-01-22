@@ -33,5 +33,6 @@ jobs:
         with:
           files: |
             dist/clash-of-clans-card.js
+            assets/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

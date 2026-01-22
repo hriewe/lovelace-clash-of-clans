@@ -191,6 +191,30 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
     entityBySuffix(suffix) {
         return this.relatedEntities.find((e) => e.entity_id.endsWith(suffix));
     }
+    getAssetUrl(path) {
+        return new URL(path, new URL(".", import.meta.url)).toString();
+    }
+    renderIcon(fileName, fallbackEmoji) {
+        const src = this.getAssetUrl(`assets/${fileName}`);
+        return b `
+      <span class="icon-wrap">
+        <img
+          class="level-icon"
+          src=${src}
+          alt=""
+          @error=${(ev) => {
+            const img = ev.target;
+            img.style.display = "none";
+            const wrap = img.parentElement;
+            const fallback = wrap?.querySelector(".icon-fallback");
+            if (fallback)
+                fallback.style.display = "inline";
+        }}
+        />
+        <span class="icon-fallback">${fallbackEmoji}</span>
+      </span>
+    `;
+    }
     get showProgression() {
         return this.config?.show_progression !== false;
     }
@@ -228,6 +252,18 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         });
         return `${rel} (${local})`;
     }
+    _handleTap() {
+        const event = new CustomEvent("hass-action", {
+            detail: {
+                config: this.config,
+                action: "more-info",
+                entity: this.config.entity,
+            },
+            bubbles: true,
+            composed: true,
+        });
+        this.dispatchEvent(event);
+    }
     // -------------------- render helpers --------------------
     renderProgress(label, suffix) {
         const entity = this.entityBySuffix(suffix);
@@ -252,22 +288,44 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         if (!info) {
             return b `<div class="muted">Player not found</div>`;
         }
+        const rawLeague = info.attributes.league ?? "Unranked";
+        const leagueSlug = rawLeague.toLowerCase().split(' ')[0];
+        const leagueIconFile = leagueSlug === "unranked" ? "unranked.png" : `${leagueSlug}.png`;
         const xp = this.entityBySuffix("_xp_level")?.state ??
             info.attributes?.experience_level ??
             "—";
+        const thLevel = this.entityBySuffix("_town_hall_level")?.state;
+        const bhLevel = this.entityBySuffix("_builder_hall_level")?.state;
+        const trophies = this.entityBySuffix("_trophies")?.state ?? "—";
         return b `
       <div class="header">
         <div class="name">${info.state}</div>
 
         <div class="sub">
-          ${info.attributes.league ?? "Unranked"} •
-          🏆 ${this.entityBySuffix("_trophies")?.state ?? "—"}
+          <span class="inline">
+            ${this.renderIcon(leagueIconFile, "🏆")} 
+            ${rawLeague}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon("trophy.png", "🏆")} ${trophies}
+          </span>
         </div>
 
-        <div class="sub">
-          🏠 TH ${this.entityBySuffix("_town_hall_level")?.state ?? "—"}
-          • 🏗 BH ${this.entityBySuffix("_builder_hall_level")?.state ?? "—"}
-          • ⭐ XP ${xp}
+  <div class="sub">
+          <span class="inline">
+            ${this.renderIcon(`th${thLevel}.png`, "🏠")}
+            TH ${thLevel ?? "—"}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon(`bh${bhLevel}.png`, "🏗")}
+            BH ${bhLevel ?? "—"}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon("xp.png", "⭐")} XP ${xp}
+          </span>
         </div>
       </div>
     `;
@@ -278,7 +336,7 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         return b `
       <div class="section">
         <strong>Progression</strong>
-        ${this.renderProgress("Troops", "_troop_progression")}
+        ${this.renderProgress("Troops", "_troop_pet_progression")}
         ${this.renderProgress("Spells", "_spell_progression")}
         ${this.renderProgress("Heroes", "_hero_progression")}
       </div>
@@ -293,7 +351,10 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         const rawState = state.state;
         const displayState = rawState === "unknown" ? "No war declared" :
             rawState === "inWar" ? "Battle Day" :
-                rawState;
+                rawState === "preparation" ? "Preparation Day" :
+                    rawState === "warEnded" ? "War Ended" :
+                        rawState === "notInWar" ? "Not in war" :
+                            rawState;
         const end = this.entityBySuffix("_current_war_end_time")?.state;
         const attacksRemaining = this.entityBySuffix("_war_attacks_remaining")?.state;
         const showAttacksRow = rawState === "inWar" &&
@@ -304,11 +365,15 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
       <div class="section">
         <strong>Clan War</strong>
         <div class="war">
-          <div>⚔️ ${displayState}</div>
+          <div class="inline">
+            ${this.renderIcon("clanwar.png", "⚔️")} 
+            <span>${displayState}</span>
+          </div>
+          
           ${showAttacksRow
             ? b `<div>Attacks Left: ${attacksRemaining}</div>`
             : b ``}
-          ${rawState === "unknown"
+          ${rawState === "unknown" || rawState === "notInWar"
             ? b ``
             : b `<div class="muted">Ends: ${this.formatRelativeDate(end)}</div>`}
         </div>
@@ -320,7 +385,7 @@ let ClashOfClansCard = class ClashOfClansCard extends i {
         if (!this.hass || !this.config)
             return b ``;
         return b `
-      <ha-card>
+      <ha-card @click=${this._handleTap}>
         ${this.renderHeader()}
         ${this.renderProgression()}
         ${this.renderWar()}
@@ -347,6 +412,36 @@ ClashOfClansCard.styles = i$3 `
     .sub {
       color: var(--secondary-text-color);
       margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon-fallback {
+      display: none;
+    }
+
+
+    .level-icon {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
     }
 
     .section {

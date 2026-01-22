@@ -53,6 +53,36 @@ export class ClashOfClansCard extends LitElement {
     .sub {
       color: var(--secondary-text-color);
       margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon-fallback {
+      display: none;
+    }
+
+
+    .level-icon {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
     }
 
     .section {
@@ -130,6 +160,32 @@ export class ClashOfClansCard extends LitElement {
     );
   }
 
+  private getAssetUrl(path: string): string {
+    return new URL(path, new URL(".", import.meta.url)).toString();
+  }
+
+  private renderIcon(fileName: string, fallbackEmoji: string): TemplateResult {
+    const src = this.getAssetUrl(`assets/${fileName}`);
+
+    return html`
+      <span class="icon-wrap">
+        <img
+          class="level-icon"
+          src=${src}
+          alt=""
+          @error=${(ev: Event) => {
+            const img = ev.target as HTMLImageElement;
+            img.style.display = "none";
+            const wrap = img.parentElement;
+            const fallback = wrap?.querySelector(".icon-fallback") as HTMLElement | null;
+            if (fallback) fallback.style.display = "inline";
+          }}
+        />
+        <span class="icon-fallback">${fallbackEmoji}</span>
+      </span>
+    `;
+  }
+
   private get showProgression(): boolean {
     return this.config?.show_progression !== false;
   }
@@ -170,6 +226,19 @@ export class ClashOfClansCard extends LitElement {
     return `${rel} (${local})`;
   }
 
+  private _handleTap(): void {
+  const event = new CustomEvent("hass-action", {
+    detail: {
+      config: this.config,
+      action: "more-info",
+      entity: this.config.entity,
+    },
+    bubbles: true,
+    composed: true,
+  });
+  this.dispatchEvent(event);
+}
+
   // -------------------- render helpers --------------------
 
   private renderProgress(label: string, suffix: string): TemplateResult | null {
@@ -198,24 +267,48 @@ export class ClashOfClansCard extends LitElement {
       return html`<div class="muted">Player not found</div>`;
     }
 
+    const rawLeague = info.attributes.league ?? "Unranked";
+    const leagueSlug = rawLeague.toLowerCase().split(' ')[0];
+    const leagueIconFile = leagueSlug === "unranked" ? "unranked.png" : `${leagueSlug}.png`;
+
     const xp =
       this.entityBySuffix("_xp_level")?.state ??
       info.attributes?.experience_level ??
       "—";
+
+    const thLevel = this.entityBySuffix("_town_hall_level")?.state;
+    const bhLevel = this.entityBySuffix("_builder_hall_level")?.state;
+    const trophies = this.entityBySuffix("_trophies")?.state ?? "—";
 
     return html`
       <div class="header">
         <div class="name">${info.state}</div>
 
         <div class="sub">
-          ${info.attributes.league ?? "Unranked"} •
-          🏆 ${this.entityBySuffix("_trophies")?.state ?? "—"}
+          <span class="inline">
+            ${this.renderIcon(leagueIconFile, "🏆")} 
+            ${rawLeague}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon("trophy.png", "🏆")} ${trophies}
+          </span>
         </div>
 
-        <div class="sub">
-          🏠 TH ${this.entityBySuffix("_town_hall_level")?.state ?? "—"}
-          • 🏗 BH ${this.entityBySuffix("_builder_hall_level")?.state ?? "—"}
-          • ⭐ XP ${xp}
+  <div class="sub">
+          <span class="inline">
+            ${this.renderIcon(`th${thLevel}.png`, "🏠")}
+            TH ${thLevel ?? "—"}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon(`bh${bhLevel}.png`, "🏗")}
+            BH ${bhLevel ?? "—"}
+          </span>
+          •
+          <span class="inline">
+            ${this.renderIcon("xp.png", "⭐")} XP ${xp}
+          </span>
         </div>
       </div>
     `;
@@ -227,7 +320,7 @@ export class ClashOfClansCard extends LitElement {
     return html`
       <div class="section">
         <strong>Progression</strong>
-        ${this.renderProgress("Troops", "_troop_progression")}
+        ${this.renderProgress("Troops", "_troop_pet_progression")}
         ${this.renderProgress("Spells", "_spell_progression")}
         ${this.renderProgress("Heroes", "_hero_progression")}
       </div>
@@ -244,6 +337,9 @@ export class ClashOfClansCard extends LitElement {
     const displayState =
       rawState === "unknown" ? "No war declared" :
       rawState === "inWar" ? "Battle Day" :
+      rawState === "preparation" ? "Preparation Day" :
+      rawState === "warEnded" ? "War Ended" :
+      rawState === "notInWar" ? "Not in war" :
       rawState;
 
     const end = this.entityBySuffix("_current_war_end_time")?.state;
@@ -258,11 +354,15 @@ export class ClashOfClansCard extends LitElement {
       <div class="section">
         <strong>Clan War</strong>
         <div class="war">
-          <div>⚔️ ${displayState}</div>
+          <div class="inline">
+            ${this.renderIcon("clanwar.png", "⚔️")} 
+            <span>${displayState}</span>
+          </div>
+          
           ${showAttacksRow
             ? html`<div>Attacks Left: ${attacksRemaining}</div>`
             : html``}
-          ${rawState === "unknown"
+          ${rawState === "unknown" || rawState === "notInWar"
             ? html``
             : html`<div class="muted">Ends: ${this.formatRelativeDate(end)}</div>`}
         </div>
@@ -276,7 +376,7 @@ export class ClashOfClansCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     return html`
-      <ha-card>
+      <ha-card @click=${this._handleTap}>
         ${this.renderHeader()}
         ${this.renderProgression()}
         ${this.renderWar()}
